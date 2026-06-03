@@ -100,6 +100,9 @@ IDAStarFinder.prototype.findPath = function(startX, startY, endX, endY, grid) {
      */
     var search = function(node, g, cutoff, route, depth) {
         nodesVisited++;
+        if (nodesVisited > 50000) { // Nếu duyệt quá 50.000 ô mà chưa ra thì dừng
+    return Infinity;
+}
 
         // Enforce timelimit:
         if (this.timeLimit > 0 &&
@@ -124,11 +127,11 @@ IDAStarFinder.prototype.findPath = function(startX, startY, endX, endY, grid) {
 
         var neighbours = grid.getNeighbors(node, this.diagonalMovement);
 
-        // Sort the neighbours, gives nicer paths. But, this deviates
-        // from the original algorithm - so I left it out.
-        //neighbours.sort(function(a, b){
-        //    return h(a, end) - h(b, end);
-        //});
+         Sort the neighbours, gives nicer paths. But, this deviates
+         from the original algorithm - so I left it out.
+        neighbours.sort(function(a, b){
+            return h(a, end) - h(b, end);
+        });
 
         
         /*jshint -W084 *///Disable warning: Expected a conditional expression and instead saw an assignment
