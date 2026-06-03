@@ -1,0 +1,62 @@
+var assert = require('assert');
+var MazeImageImporter = require('../visual/js/maze_image_importer');
+
+function makeImageData(width, height, pixels) {
+    var data = [];
+
+    pixels.forEach(function(pixel) {
+        data.push(pixel[0], pixel[1], pixel[2], pixel[3] === undefined ? 255 : pixel[3]);
+    });
+
+    return {
+        width: width,
+        height: height,
+        data: data
+    };
+}
+
+describe('MazeImageImporter', function() {
+    it('marks dark pixels as walls by default', function() {
+        var imageData = makeImageData(2, 2, [
+            [0, 0, 0],
+            [255, 255, 255],
+            [120, 120, 120],
+            [200, 200, 200]
+        ]);
+
+        var matrix = MazeImageImporter.imageDataToMatrix(imageData, {
+            threshold: 150
+        });
+
+        assert.deepEqual(matrix, [
+            [1, 0],
+            [1, 0]
+        ]);
+    });
+
+    it('can treat light pixels as walls', function() {
+        var imageData = makeImageData(2, 1, [
+            [30, 30, 30],
+            [240, 240, 240]
+        ]);
+
+        var matrix = MazeImageImporter.imageDataToMatrix(imageData, {
+            threshold: 150,
+            darkAsWall: false
+        });
+
+        assert.deepEqual(matrix, [[0, 1]]);
+    });
+
+    it('keeps transparent pixels walkable', function() {
+        var imageData = makeImageData(1, 1, [
+            [0, 0, 0, 0]
+        ]);
+
+        var matrix = MazeImageImporter.imageDataToMatrix(imageData, {
+            threshold: 150
+        });
+
+        assert.deepEqual(matrix, [[0]]);
+    });
+});

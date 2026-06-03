@@ -1,0 +1,261 @@
+<!DOCTYPE HTML>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8">
+    <title>PathFinding.js</title>
+
+    <link rel="stylesheet" href="./css/style.css" />
+    <link rel="stylesheet" href="./lib/themes/jquery.ui.all.css" />
+
+    <script type="text/javascript" src="./lib/raphael-min.js"></script>
+    <script type="text/javascript" src="./lib/es5-shim.min.js"></script>
+    <script type="text/javascript" src="./lib/jquery-1.7.2.min.js"></script>
+    <script type="text/javascript" src="./lib/state-machine.min.js"></script>
+    <script type="text/javascript" src="./lib/async.min.js"></script>
+
+    <script type="text/javascript" src="./lib/ui/jquery.ui.core.min.js"></script>
+    <script type="text/javascript" src="./lib/ui/jquery.ui.widget.min.js"></script>
+    <script type="text/javascript" src="./lib/ui/jquery.ui.mouse.min.js"></script>
+    <script type="text/javascript" src="./lib/ui/jquery.ui.draggable.min.js"></script>
+    <script type="text/javascript" src="./lib/ui/jquery.ui.accordion.min.js"></script>
+    <script type="text/javascript" src="./lib/ui/jquery.ui.slider.min.js"></script>
+
+    <script type="text/javascript" src="./lib/pathfinding-browser.min.js"></script>
+
+    <script type="text/javascript" src="./js/maze_image_importer.js"></script>
+    <script type="text/javascript" src="./js/view.js"></script>
+    <script type="text/javascript" src="./js/controller.js"></script>
+    <script type="text/javascript" src="./js/panel.js"></script>
+    <script type="text/javascript" src="./js/main.js"></script>
+  </head>
+  <body>
+    <div id="draw_area"></div>
+
+    <div id="instructions_panel" class="panel">
+      <header>
+        <h2 class="header_title">Hướng dẫn</h2>
+        <span id="hide_instructions">ẩn</span>
+      </header>
+      Nhấp trong lưới màu <span class="white">trắng</span> và kéo chuột để vẽ vật cản. <br>
+      Kéo ô màu <span class="green">xanh lá</span> để đặt vị trí bắt đầu. <br>
+      Kéo ô màu <span class="red">đỏ</span> để đặt vị trí kết thúc. <br>
+      Chọn thuật toán ở bảng bên phải. <br>
+      Nhấp Bắt đầu tìm kiếm ở góc dưới bên phải để chạy hoạt ảnh.
+    </div>
+
+    <div id="image_panel" class="panel">
+      <header><h2 class="header_title">Nhập mê cung từ ảnh</h2></header>
+      <input id="maze_image_input" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp">
+
+      <label class="maze_option" for="maze_wall_threshold">
+        Ngưỡng tường: <span id="maze_wall_threshold_value">150</span>
+      </label>
+      <input id="maze_wall_threshold" type="range" min="0" max="255" value="150">
+
+      <label class="maze_option">
+        <input id="maze_dark_walls" type="checkbox" checked>
+        Vùng tối là tường
+      </label>
+
+      <button id="maze_apply_button" type="button">Áp dụng ảnh</button>
+      <div id="maze_image_status">Chưa chọn ảnh</div>
+    </div>
+
+    <div id="algorithm_panel" class="panel right_panel">
+      <header><h2 class="header_title">Chọn thuật toán</h2></header>
+
+      <div class="accordion">
+        <h3 id="astar_header"><a href="#">A*</a></h3>
+        <div id="astar_section" class="finder_section">
+          <header class="option_header">
+            <h3>Hàm heuristic</h3>
+          </header>
+          <div id="astar_heuristic" class="sub_options">
+            <input type="radio" name="astar_heuristic" value="manhattan" checked />
+            <label class="option_label">Manhattan</label> <br>
+            <input type="radio" name="astar_heuristic" value="euclidean"/>
+            <label class="option_label">Euclidean</label> <br>
+            <input type="radio" name="astar_heuristic" value="octile"/>
+            <label class="option_label">Octile</label> <br>
+            <input type="radio" name="astar_heuristic" value="chebyshev"/>
+            <label class="option_label">Chebyshev</label> <br>
+          </div>
+
+          <header class="option_header">
+            <h3>Tùy chọn</h3>
+          </header>
+          <div class="optional sub_options">
+            <input type="checkbox" class="allow_diagonal" checked>
+            <label class="option_label">Cho phép đi chéo</label> <br>
+            <input type="checkbox" class="bi-directional">
+            <label class="option_label">Tìm kiếm hai chiều</label> <br>
+            <input type="checkbox" class="dont_cross_corners">
+            <label class="option_label">Không cắt góc</label> <br>
+            <input class="spinner" name="astar_weight" value="1">
+            <label class="option_label">Trọng số</label> <br>
+          </div>
+        </div>
+
+        <h3 id="ida_header"><a href="#">IDA*</a></h3>
+        <div id="ida_section" class="finder_section">
+          <header class="option_header">
+            <h3>Hàm heuristic</h3>
+          </header>
+          <div id="ida_heuristic" class="sub_options">
+            <input type="radio" name="ida_heuristic" value="manhattan" checked />
+            <label class="option_label">Manhattan</label> <br>
+            <input type="radio" name="ida_heuristic" value="euclidean"/>
+            <label class="option_label">Euclidean</label> <br>
+            <input type="radio" name="ida_heuristic" value="octile"/>
+            <label class="option_label">Octile</label> <br>
+            <input type="radio" name="ida_heuristic" value="chebyshev"/>
+            <label class="option_label">Chebyshev</label> <br>
+          </div>
+          <header class="option_header">
+            <h3>Tùy chọn</h3>
+          </header>
+          <div class="optional sub_options">
+            <input type="checkbox" class="allow_diagonal" checked>
+            <label class="option_label">Cho phép đi chéo</label> <br>
+            <input type="checkbox" class="dont_cross_corners">
+            <label class="option_label">Không cắt góc</label> <br>
+            <input class="spinner" name="astar_weight" value="1">
+            <label class="option_label">Trọng số</label> <br>
+            <input class="spinner" name="time_limit" value="10">
+            <label class="option_label">Giới hạn thời gian (giây)</label> <br>
+            <input type="checkbox" class="track_recursion" checked />
+            <label class="option_label">Hiển thị đệ quy</label> <br>
+          </div>
+        </div>
+
+        <h3 id="breadthfirst_header"><a href="#">Breadth-First-Search</a></h3>
+        <div id="breadthfirst_section" class="finder_section">
+          <header class="option_header">
+            <h3>Tùy chọn</h3>
+          </header>
+          <div class="optional sub_options">
+            <input type="checkbox" class="allow_diagonal" checked>
+            <label class="option_label">Cho phép đi chéo</label> <br>
+            <input type="checkbox" class="bi-directional">
+            <label class="option_label">Tìm kiếm hai chiều</label> <br>
+            <input type="checkbox" class="dont_cross_corners">
+            <label class="option_label">Không cắt góc</label> <br>
+          </div>
+        </div>
+
+        <h3 id="bestfirst_header"><a href="#">Best-First-Search</a></h3>
+        <div id="bestfirst_section" class="finder_section">
+          <header class="option_header">
+            <h3>Hàm heuristic</h3>
+          </header>
+          <div id="bestfirst_heuristic" class="sub_options">
+            <input type="radio" name="bestfirst_heuristic" value="manhattan" checked />
+            <label class="option_label">Manhattan</label> <br>
+            <input type="radio" name="bestfirst_heuristic" value="euclidean"/>
+            <label class="option_label">Euclidean</label> <br>
+            <input type="radio" name="bestfirst_heuristic" value="octile"/>
+            <label class="option_label">Octile</label> <br>
+            <input type="radio" name="bestfirst_heuristic" value="chebyshev"/>
+            <label class="option_label">Chebyshev</label> <br>
+          </div>
+
+          <header class="option_header">
+            <h3>Tùy chọn</h3>
+          </header>
+          <div class="optional sub_options">
+            <input type="checkbox" class="allow_diagonal" checked>
+            <label class="option_label">Cho phép đi chéo</label> <br>
+            <input type="checkbox" class="bi-directional">
+            <label class="option_label">Tìm kiếm hai chiều</label> <br>
+            <input type="checkbox" class="dont_cross_corners">
+            <label class="option_label">Không cắt góc</label> <br>
+          </div>
+        </div>
+
+        <h3 id="dijkstra_header"><a href="#">Dijkstra</a></h3>
+        <div id="dijkstra_section" class="finder_section">
+          <header class="option_header">
+            <h3>Tùy chọn</h3>
+          </header>
+          <div class="optional sub_options">
+            <input type="checkbox" class="allow_diagonal" checked>
+            <label class="option_label">Cho phép đi chéo</label> <br>
+            <input type="checkbox" class="bi-directional">
+            <label class="option_label">Tìm kiếm hai chiều</label> <br>
+            <input type="checkbox" class="dont_cross_corners">
+            <label class="option_label">Không cắt góc</label> <br>
+          </div>
+        </div>
+
+        <h3 id="jump_point_header"><a href="#">Jump Point Search</a></h3>
+        <div id="jump_point_section" class="finder_section">
+          <header class="option_header">
+            <h3>Hàm heuristic</h3>
+          </header>
+          <div id="jump_point_heuristic" class="sub_options">
+            <input type="radio" name="jump_point_heuristic" value="manhattan" checked />
+            <label class="option_label">Manhattan</label> <br>
+            <input type="radio" name="jump_point_heuristic" value="euclidean"/>
+            <label class="option_label">Euclidean</label> <br>
+            <input type="radio" name="jump_point_heuristic" value="octile"/>
+            <label class="option_label">Octile</label> <br>
+            <input type="radio" name="jump_point_heuristic" value="chebyshev"/>
+            <label class="option_label">Chebyshev</label> <br>
+          </div>
+          <header class="option_header">
+            <h3>Tùy chọn</h3>
+          </header>
+          <div class="optional sub_options">
+            <input type="checkbox" class="track_recursion" checked>
+            <label class="option_label">Hiển thị đệ quy</label> <br>
+          </div>
+        </div>
+
+	<h3 id="orth_jump_point_header"><a href="#">Orthogonal Jump Point Search</a></h3>
+        <div id="orth_jump_point_section" class="finder_section">
+          <header class="option_header">
+            <h3>Hàm heuristic</h3>
+          </header>
+          <div id="orth_jump_point_heuristic" class="sub_options">
+            <input type="radio" name="orth_jump_point_heuristic" value="manhattan" checked />
+            <label class="option_label">Manhattan</label> <br>
+            <input type="radio" name="orth_jump_point_heuristic" value="euclidean"/>
+            <label class="option_label">Euclidean</label> <br>
+            <input type="radio" name="orth_jump_point_heuristic" value="octile"/>
+            <label class="option_label">Octile</label> <br>
+            <input type="radio" name="orth_jump_point_heuristic" value="chebyshev"/>
+            <label class="option_label">Chebyshev</label> <br>
+          </div>
+          <header class="option_header">
+            <h3>Tùy chọn</h3>
+          </header>
+          <div class="optional sub_options">
+            <input type="checkbox" class="track_recursion" checked>
+            <label class="option_label">Hiển thị đệ quy</label> <br>
+          </div>
+        </div>
+
+      </div><!-- .accordion -->
+    </div><!-- #algorithm_panel -->
+
+    <div id="play_panel" class="panel right_panel">
+      <button id="button1" class="control_button">Bắt đầu tìm kiếm</button>
+      <button id="button2" class="control_button">Tạm dừng tìm kiếm</button>
+      <button id="button3" class="control_button">Xóa tường</button>
+      <div id="zoom_controls">
+        <button id="zoom_out_button" class="zoom_button" type="button" title="Thu nhỏ">-</button>
+        <button id="zoom_reset_button" class="zoom_button" type="button" title="Đặt lại zoom">
+          <span id="zoom_level">100%</span>
+        </button>
+        <button id="zoom_in_button" class="zoom_button" type="button" title="Phóng to">+</button>
+      </div>
+    </div>
+
+    <div id="stats"></div>
+
+    <footer>
+      Dự án được lưu trữ trên <a href="http://github.com/qiao/PathFinding.js">Github</a>
+    </footer>
+
+  </body>
+</html>
