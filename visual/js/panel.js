@@ -1,6 +1,7 @@
 /**
  * The control panel.
  */
+var DepthFirstFinder = PF.DepthFirstFinder || window.DepthFirstFinder;
 var Panel = {
     init: function() {
         var $algo = $('#algorithm_panel');
@@ -175,7 +176,15 @@ var Panel = {
               heuristic: PF.Heuristic[heuristic],
               weight: weight
             });
+            break;
+        case 'dfs_header':
+            allowDiagonal = $('#dfs_opts .allow_diagonal').is(':checked');
+            dontCrossCorners = $('#dfs_opts .dont_cross_corners').is(':checked');
 
+            finder = new DepthFirstFinder({
+                allowDiagonal: allowDiagonal,
+                dontCrossCorners: dontCrossCorners
+            });
             break;
         }
 
