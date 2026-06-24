@@ -127,8 +127,7 @@ IDAStarFinder.prototype.findPath = function(startX, startY, endX, endY, grid) {
 
         var neighbours = grid.getNeighbors(node, this.diagonalMovement);
 
-         Sort the neighbours, gives nicer paths. But, this deviates
-         from the original algorithm - so I left it out.
+        // Sort the neighbours for cleaner visualized recursive paths.
         neighbours.sort(function(a, b){
             return h(a, end) - h(b, end);
         });

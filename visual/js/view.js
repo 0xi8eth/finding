@@ -194,8 +194,10 @@ var View = {
             transform: this.nodeZoomEffect.transformBack,
         }, this.nodeZoomEffect.duration);
     },
-    setWalkableAt: function(gridX, gridY, value) {
-        var node, i, blockedNodes = this.blockedNodes;
+    setWalkableAt: function(gridX, gridY, value, options) {
+        var node, i,
+            animate = !options || options.animate !== false,
+            blockedNodes = this.blockedNodes;
         if (!blockedNodes) {
             blockedNodes = this.blockedNodes = new Array(this.numRows);
             for (i = 0; i < this.numRows; ++i) {
@@ -206,11 +208,15 @@ var View = {
         if (value) {
             // clear blocked node
             if (node) {
-                this.colorizeNode(node, this.rects[gridY][gridX].attr('fill'));
-                this.zoomNode(node);
-                setTimeout(function() {
+                if (animate) {
+                    this.colorizeNode(node, this.rects[gridY][gridX].attr('fill'));
+                    this.zoomNode(node);
+                    setTimeout(function() {
+                        node.remove();
+                    }, this.nodeZoomEffect.duration);
+                } else {
                     node.remove();
-                }, this.nodeZoomEffect.duration);
+                }
                 blockedNodes[gridY][gridX] = null;
             }
         } else {
@@ -219,8 +225,12 @@ var View = {
                 return;
             }
             node = blockedNodes[gridY][gridX] = this.rects[gridY][gridX].clone();
-            this.colorizeNode(node, this.nodeStyle.blocked.fill);
-            this.zoomNode(node);
+            if (animate) {
+                this.colorizeNode(node, this.nodeStyle.blocked.fill);
+                this.zoomNode(node);
+            } else {
+                node.attr(this.nodeStyle.blocked);
+            }
         }
     },
     clearFootprints: function() {

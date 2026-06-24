@@ -59,4 +59,74 @@ describe('MazeImageImporter', function() {
 
         assert.deepEqual(matrix, [[0]]);
     });
+
+    it('thins thick orthogonal walls to one cell', function() {
+        var matrix = MazeImageImporter.thinWalls([
+            [0, 1, 1, 1, 0],
+            [0, 1, 1, 1, 0],
+            [0, 1, 1, 1, 0],
+            [0, 1, 1, 1, 0],
+            [0, 1, 1, 1, 0]
+        ]);
+
+        assert.deepEqual(matrix, [
+            [0, 0, 1, 0, 0],
+            [0, 0, 1, 0, 0],
+            [0, 0, 1, 0, 0],
+            [0, 0, 1, 0, 0],
+            [0, 0, 1, 0, 0]
+        ]);
+    });
+
+    it('can keep thick walls when thinning is disabled', function() {
+        var imageData = makeImageData(3, 3, [
+            [0, 0, 0],
+            [0, 0, 0],
+            [0, 0, 0],
+            [0, 0, 0],
+            [0, 0, 0],
+            [0, 0, 0],
+            [255, 255, 255],
+            [255, 255, 255],
+            [255, 255, 255]
+        ]);
+
+        var matrix = MazeImageImporter.imageDataToMatrix(imageData, {
+            threshold: 150,
+            thinWalls: false
+        });
+
+        assert.deepEqual(matrix, [
+            [1, 1, 1],
+            [1, 1, 1],
+            [0, 0, 0]
+        ]);
+    });
+
+    it('keeps already thin wall corners connected', function() {
+        var matrix = MazeImageImporter.thinWalls([
+            [1, 1, 0],
+            [0, 1, 0],
+            [0, 1, 0]
+        ]);
+
+        assert.deepEqual(matrix, [
+            [1, 1, 0],
+            [0, 1, 0],
+            [0, 1, 0]
+        ]);
+    });
+
+    it('chooses endpoints from the largest walkable area', function() {
+        var endpoints = MazeImageImporter.findWalkableEndpoints([
+            [0, 0, 0, 1, 0],
+            [1, 1, 0, 1, 0],
+            [0, 0, 0, 1, 0]
+        ]);
+
+        assert.deepEqual(endpoints, {
+            start: [0, 0],
+            end: [0, 2]
+        });
+    });
 });

@@ -158,7 +158,7 @@ var Panel = {
             trackRecursion = typeof $('#ida_section ' +
                                      '.track_recursion:checked').val() !== 'undefined';
 
-            heuristic = $('input[name=jump_point_heuristic]:checked').val();
+            heuristic = $('input[name=ida_heuristic]:checked').val();
 
             weight = parseInt($('#ida_section input[name=astar_weight]').val()) || 1;
             weight = weight >= 1 ? weight : 1; /* if negative or 0, use 1 */

@@ -32,38 +32,68 @@
   <body>
     <div id="draw_area"></div>
 
-    <div id="instructions_panel" class="panel">
-      <header>
-        <h2 class="header_title">Hướng dẫn</h2>
-        <span id="hide_instructions">ẩn</span>
+    <div id="instructions_panel" class="panel left_panel">
+      <header class="panel_header">
+        <div>
+          <span class="panel_kicker">PathFinding.js</span>
+          <h2 class="header_title">Trình tìm đường</h2>
+        </div>
+        <button id="hide_instructions" class="panel_close" type="button" title="Ẩn hướng dẫn">&times;</button>
       </header>
-      Nhấp trong lưới màu <span class="white">trắng</span> và kéo chuột để vẽ vật cản. <br>
-      Kéo ô màu <span class="green">xanh lá</span> để đặt vị trí bắt đầu. <br>
-      Kéo ô màu <span class="red">đỏ</span> để đặt vị trí kết thúc. <br>
-      Chọn thuật toán ở bảng bên phải. <br>
-      Nhấp Bắt đầu tìm kiếm ở góc dưới bên phải để chạy hoạt ảnh.
+      <div class="legend">
+        <span class="legend_item"><span class="legend_swatch swatch_open"></span>Ô trống</span>
+        <span class="legend_item"><span class="legend_swatch swatch_wall"></span>Tường</span>
+        <span class="legend_item"><span class="legend_swatch swatch_start"></span>Bắt đầu</span>
+        <span class="legend_item"><span class="legend_swatch swatch_end"></span>Kết thúc</span>
+      </div>
+      <ol class="guide_steps">
+        <li>Vẽ hoặc xóa tường bằng cách kéo trên lưới.</li>
+        <li>Kéo ô xanh/đỏ để đổi điểm bắt đầu hoặc kết thúc.</li>
+        <li>Quét ảnh xong vẫn chỉnh được tường và hai điểm này trước khi chạy.</li>
+      </ol>
     </div>
 
-    <div id="image_panel" class="panel">
-      <header><h2 class="header_title">Nhập mê cung từ ảnh</h2></header>
-      <input id="maze_image_input" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp">
+    <div id="image_panel" class="panel left_panel">
+      <header class="panel_header">
+        <div>
+          <span class="panel_kicker">Scan ảnh</span>
+          <h2 class="header_title">Quét mê cung</h2>
+        </div>
+      </header>
+      <label class="file_picker" for="maze_image_input">
+        <span>Chọn ảnh mê cung</span>
+        <small>PNG, JPG, WEBP, GIF, BMP tối đa 5MB</small>
+      </label>
+      <input id="maze_image_input" class="file_input" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp">
 
       <label class="maze_option" for="maze_wall_threshold">
-        Ngưỡng tường: <span id="maze_wall_threshold_value">150</span>
+        <span>Ngưỡng tường</span>
+        <strong id="maze_wall_threshold_value">150</strong>
       </label>
       <input id="maze_wall_threshold" type="range" min="0" max="255" value="150">
 
-      <label class="maze_option">
-        <input id="maze_dark_walls" type="checkbox" checked>
-        Vùng tối là tường
-      </label>
+      <div class="maze_toggles">
+        <label class="maze_toggle">
+          <input id="maze_dark_walls" type="checkbox" checked>
+          <span>Vùng tối là tường</span>
+        </label>
+        <label class="maze_toggle">
+          <input id="maze_thin_walls" type="checkbox" checked>
+          <span>Làm mảnh tường</span>
+        </label>
+      </div>
 
-      <button id="maze_apply_button" type="button">Áp dụng ảnh</button>
-      <div id="maze_image_status">Chưa chọn ảnh</div>
+      <button id="maze_apply_button" class="primary_button" type="button">Áp dụng ảnh</button>
+      <div id="maze_image_status" aria-live="polite">Chưa chọn ảnh</div>
     </div>
 
     <div id="algorithm_panel" class="panel right_panel">
-      <header><h2 class="header_title">Chọn thuật toán</h2></header>
+      <header class="panel_header">
+        <div>
+          <span class="panel_kicker">Thuật toán</span>
+          <h2 class="header_title">Chọn thuật toán</h2>
+        </div>
+      </header>
 
       <div class="accordion">
         <h3 id="astar_header"><a href="#">A*</a></h3>
@@ -253,6 +283,12 @@
     </div><!-- #algorithm_panel -->
 
     <div id="play_panel" class="panel right_panel">
+      <header class="panel_header panel_header_compact">
+        <div>
+          <span class="panel_kicker">Điều khiển</span>
+          <h2 class="header_title">Chạy mô phỏng</h2>
+        </div>
+      </header>
       <button id="button1" class="control_button">Bắt đầu tìm kiếm</button>
       <button id="button2" class="control_button">Tạm dừng tìm kiếm</button>
       <button id="button3" class="control_button">Xóa tường</button>

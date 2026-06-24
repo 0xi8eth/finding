@@ -64,22 +64,22 @@ var Controller = StateMachine.create({
         },
         {
             name: 'dragStart',
-            from: ['ready', 'finished'],
+            from: ['ready', 'finished', 'modified'],
             to:   'draggingStart'
         },
         {
             name: 'dragEnd',
-            from: ['ready', 'finished'],
+            from: ['ready', 'finished', 'modified'],
             to:   'draggingEnd'
         },
         {
             name: 'drawWall',
-            from: ['ready', 'finished'],
+            from: ['ready', 'finished', 'modified'],
             to:   'drawingWall'
         },
         {
             name: 'eraseWall',
-            from: ['ready', 'finished'],
+            from: ['ready', 'finished', 'modified'],
             to:   'erasingWall'
         },
         {
@@ -155,6 +155,22 @@ $.extend(Controller, {
 
         this.clearOperations();
         this.clearFootprints();
+        if (!finder || !finder.findPath) {
+            this.setMazeImageStatus('Chưa chọn thuật toán tìm đường hợp lệ.', true);
+            this.path = [];
+            this.operationCount = 0;
+            this.timeSpent = '0.0000';
+            this.loop();
+            return;
+        }
+        if (!this.ensureSearchEndpoints()) {
+            this.setMazeImageStatus('Không tìm được điểm bắt đầu/kết thúc hợp lệ.', true);
+            this.path = [];
+            this.operationCount = 0;
+            this.timeSpent = '0.0000';
+            this.loop();
+            return;
+        }
         timeStart = window.performance ? performance.now() : Date.now();
         grid = this.grid.clone();
         this.path = finder.findPath(
@@ -363,9 +379,12 @@ $.extend(Controller, {
             $input = $('#maze_image_input'),
             $threshold = $('#maze_wall_threshold'),
             $thresholdValue = $('#maze_wall_threshold_value'),
-            $darkWalls = $('#maze_dark_walls');
+            $darkWalls = $('#maze_dark_walls'),
+            $thinWalls = $('#maze_thin_walls'),
+            $applyButton = $('#maze_apply_button');
 
         $thresholdValue.text($threshold.val());
+        this.setMazeApplyEnabled(false);
 
         $input.change(function() {
             controller.loadMazeImageFile(this.files && this.files[0]);
@@ -384,9 +403,22 @@ $.extend(Controller, {
             }
         });
 
-        $('#maze_apply_button').click(function() {
+        $thinWalls.change(function() {
+            if (controller.mazeImage) {
+                controller.setMazeImageStatus('Đã đổi cách làm mảnh tường, nhấp Áp dụng ảnh.');
+            }
+        });
+
+        $applyButton.click(function() {
             controller.applyMazeImage();
         });
+    },
+    setMazeApplyEnabled: function(enabled) {
+        if (enabled) {
+            $('#maze_apply_button').removeAttr('disabled');
+        } else {
+            $('#maze_apply_button').attr({ disabled: 'disabled' });
+        }
     },
     validateMazeImageFile: function(file) {
         var extensionMatch, extension;
@@ -419,11 +451,13 @@ $.extend(Controller, {
 
         if (error) {
             this.mazeImage = null;
+            this.setMazeApplyEnabled(false);
             this.setMazeImageStatus(error, true);
             return;
         }
 
         if (!urlApi || !urlApi.createObjectURL) {
+            this.setMazeApplyEnabled(false);
             this.setMazeImageStatus('Trình duyệt không hỗ trợ đọc ảnh cục bộ.', true);
             return;
         }
@@ -434,15 +468,18 @@ $.extend(Controller, {
 
         image = new Image();
         this.mazeImageUrl = urlApi.createObjectURL(file);
+        this.setMazeApplyEnabled(false);
         this.setMazeImageStatus('Đang đọc ảnh...');
 
         image.onload = function() {
             controller.mazeImage = image;
+            controller.setMazeApplyEnabled(true);
             controller.applyMazeImage();
         };
 
         image.onerror = function() {
             controller.mazeImage = null;
+            controller.setMazeApplyEnabled(false);
             controller.setMazeImageStatus('Không đọc được ảnh này.', true);
         };
 
@@ -489,13 +526,55 @@ $.extend(Controller, {
 
         matrix = MazeImageImporter.imageDataToMatrix(imageData, {
             threshold: $('#maze_wall_threshold').val(),
-            darkAsWall: $('#maze_dark_walls').is(':checked')
+            darkAsWall: $('#maze_dark_walls').is(':checked'),
+            thinWalls: $('#maze_thin_walls').is(':checked')
         });
 
+        wallCount = this.applyMazeMatrix(matrix);
+        this.setMazeImageStatus('Đã tạo mê cung từ ảnh: ' + wallCount + ' ô tường.');
+    },
+    applyMazeMatrix: function(matrix) {
+        this.setStartEndFromMazeMatrix(matrix);
         matrix = this.keepStartEndWalkable(matrix);
         this.applyWalkabilityMatrix(matrix);
-        wallCount = this.countWalls(matrix);
-        this.setMazeImageStatus('Đã tạo mê cung từ ảnh: ' + wallCount + ' ô tường.');
+        this.redrawStartEndPos();
+        this.ensureReadyForMazeEditing();
+
+        return this.countWalls(matrix);
+    },
+    ensureReadyForMazeEditing: function() {
+        if (this.can('rest')) {
+            this.rest();
+            return;
+        }
+
+        if (this.can('clear')) {
+            this.clear();
+            return;
+        }
+
+        if (this.is('ready')) {
+            this.onready();
+        }
+    },
+    setStartEndFromMazeMatrix: function(matrix) {
+        var endpoints;
+
+        if (!MazeImageImporter.findWalkableEndpoints) {
+            return;
+        }
+
+        endpoints = MazeImageImporter.findWalkableEndpoints(matrix);
+        if (!endpoints || !endpoints.start || !endpoints.end) {
+            return;
+        }
+
+        this.setStartPos(endpoints.start[0], endpoints.start[1]);
+        this.setEndPos(endpoints.end[0], endpoints.end[1]);
+    },
+    redrawStartEndPos: function() {
+        this.setStartPos(this.startX, this.startY);
+        this.setEndPos(this.endX, this.endY);
     },
     keepStartEndWalkable: function(matrix) {
         var controller = this;
@@ -521,7 +600,7 @@ $.extend(Controller, {
         for (y = 0; y < height; ++y) {
             for (x = 0; x < width; ++x) {
                 if (matrix[y][x]) {
-                    View.setWalkableAt(x, y, false);
+                    View.setWalkableAt(x, y, false, { animate: false });
                 }
             }
         }
@@ -582,7 +661,7 @@ $.extend(Controller, {
             }
             op = operations.shift();
             isSupported = View.supportedOperations.indexOf(op.attr) !== -1;
-        } while (!isSupported);
+        } while (!isSupported || !this.grid.isInside(op.x, op.y));
 
         View.setAttributeAt(op.x, op.y, op.attr, op.value);
     },
@@ -612,6 +691,10 @@ $.extend(Controller, {
             gridY = coord[1],
             grid  = this.grid;
 
+        if (!grid.isInside(gridX, gridY)) {
+            return;
+        }
+
         if (this.can('dragStart') && this.isStartPos(gridX, gridY)) {
             this.prepareForManualEdit();
             this.dragStart();
@@ -637,6 +720,10 @@ $.extend(Controller, {
             grid = this.grid,
             gridX = coord[0],
             gridY = coord[1];
+
+        if (!grid.isInside(gridX, gridY)) {
+            return;
+        }
 
         if (this.isStartOrEndPos(gridX, gridY)) {
             return;
@@ -716,12 +803,54 @@ $.extend(Controller, {
         this.setStartPos(centerX - 5, centerY);
         this.setEndPos(centerX + 5, centerY);
     },
+    clampGridX: function(gridX) {
+        return Math.max(0, Math.min(this.gridSize[0] - 1, gridX));
+    },
+    clampGridY: function(gridY) {
+        return Math.max(0, Math.min(this.gridSize[1] - 1, gridY));
+    },
+    findFirstWalkableCell: function() {
+        var x, y;
+
+        for (y = 0; y < this.grid.height; ++y) {
+            for (x = 0; x < this.grid.width; ++x) {
+                if (this.grid.isWalkableAt(x, y)) {
+                    return [x, y];
+                }
+            }
+        }
+
+        return null;
+    },
+    ensureSearchEndpoints: function() {
+        var fallback;
+
+        if (this.grid.isInside(this.startX, this.startY) &&
+                this.grid.isInside(this.endX, this.endY) &&
+                this.grid.isWalkableAt(this.startX, this.startY) &&
+                this.grid.isWalkableAt(this.endX, this.endY)) {
+            return true;
+        }
+
+        fallback = this.findFirstWalkableCell();
+        if (!fallback) {
+            return false;
+        }
+
+        this.setStartPos(fallback[0], fallback[1]);
+        this.setEndPos(fallback[0], fallback[1]);
+        return true;
+    },
     setStartPos: function(gridX, gridY) {
+        gridX = this.clampGridX(gridX);
+        gridY = this.clampGridY(gridY);
         this.startX = gridX;
         this.startY = gridY;
         View.setStartPos(gridX, gridY);
     },
     setEndPos: function(gridX, gridY) {
+        gridX = this.clampGridX(gridX);
+        gridY = this.clampGridY(gridY);
         this.endX = gridX;
         this.endY = gridY;
         View.setEndPos(gridX, gridY);

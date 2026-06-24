@@ -3,7 +3,7 @@ var gulp = require('gulp'),
     rename = require('gulp-rename'),
     browserify = require('gulp-browserify'),
     concat = require('gulp-concat'),
-    mocha = require('gulp-mocha'),
+    Mocha = require('mocha'),
     shell = require('shelljs'),
     del = require('del'),
     jshint = require('gulp-jshint'),
@@ -13,51 +13,77 @@ var gulp = require('gulp'),
     inquirer = require("inquirer"),
     fs = require('fs');
 
-gulp.task('clean', function(cb) {
+function clean(cb) {
     del('lib/**/*.*', cb);
-});
+}
 
-gulp.task('browserify', ['clean'], function(cb) {
+function browserifyTask() {
     return gulp.src('./src/PathFinding.js')
     .pipe(browserify({ standalone: 'PF' }))
     .pipe(rename('pathfinding-browserified.js'))
-    .pipe(gulp.dest('./lib/'), cb);
-});
+    .pipe(gulp.dest('./lib/'));
+}
 
-gulp.task('uglify', ['browserify'], function(cb) {
+function uglifyTask() {
     return gulp.src('./lib/pathfinding-browserified.js')
     .pipe(uglify())
     .pipe(rename('pathfinding-browser.min.js'))
-    .pipe(gulp.dest('./lib/'), cb);
-});
+    .pipe(gulp.dest('./lib/'));
+}
 
-gulp.task('scripts', ['clean', 'browserify', 'uglify'], function(cb) {
+function concatScripts() {
     return gulp.src(['./src/banner', './lib/pathfinding-browserified.js'])
     .pipe(concat('pathfinding-browser.js'))
-    .pipe(gulp.dest('./lib/'), cb);
-});
+    .pipe(gulp.dest('./lib/'));
+}
 
-gulp.task('compile', ['scripts'], function() {
-    del('./lib/pathfinding-browserified.js');
-});
+function removeBrowserified(cb) {
+    del('./lib/pathfinding-browserified.js', cb);
+}
 
-gulp.task('test', function () {
-    return gulp.src('./test/**/*.js', {read: false})
-        .pipe(mocha({reporter: 'spec', bail: true, globals: { should: require('should') }}));
-});
+function collectTestFiles(dir, files) {
+    files = files || [];
+    fs.readdirSync(dir).forEach(function(name) {
+        var file = dir + '/' + name,
+            stat = fs.statSync(file);
 
-gulp.task('bench', function() {
+        if (stat.isDirectory()) {
+            collectTestFiles(file, files);
+        } else if (/\.js$/.test(name)) {
+            files.push(file);
+        }
+    });
+    return files;
+}
+
+function test(cb) {
+    var mocha = new Mocha({
+        reporter: 'spec',
+        bail: true
+    });
+
+    require('should');
+    collectTestFiles('./test').forEach(function(file) {
+        mocha.addFile(file);
+    });
+    mocha.run(function(failures) {
+        cb(failures ? new Error(failures + ' tests failed') : null);
+    });
+}
+
+function bench(cb) {
     shell.exec('node benchmark/benchmark.js');
-});
+    cb();
+}
 
-gulp.task('lint', function() {
+function lint() {
   return gulp.src('./src/**/*.js')
     .pipe(jshint())
     .pipe(jshint.reporter(stylish))
     .pipe(jshint.reporter('fail'));
-});
+}
 
-gulp.task('release', ['compile'], function(cb) {
+function release(cb) {
   inquirer.prompt({
       type: 'list',
       name: 'bumpType',
@@ -96,7 +122,15 @@ gulp.task('release', ['compile'], function(cb) {
       del('release');
       del('lib/**/*.*', cb);
     });
-});
+}
 
-gulp.task('default', ['lint', 'test', 'compile'], function() {
-});
+gulp.task('clean', clean);
+gulp.task('browserify', gulp.series(clean, browserifyTask));
+gulp.task('uglify', gulp.series(clean, browserifyTask, uglifyTask));
+gulp.task('scripts', gulp.series(clean, browserifyTask, uglifyTask, concatScripts));
+gulp.task('compile', gulp.series('scripts', removeBrowserified));
+gulp.task('test', test);
+gulp.task('bench', bench);
+gulp.task('lint', lint);
+gulp.task('release', gulp.series('compile', release));
+gulp.task('default', gulp.series('lint', 'test', 'compile'));
