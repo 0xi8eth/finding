@@ -2,7 +2,8 @@ var assert = require('assert');
 var fs = require('fs');
 var path = require('path');
 var vm = require('vm');
-var Grid = require('../src/core/Grid');
+var SourceGrid = require('../src/core/Grid');
+var BrowserPF = require('../visual/lib/pathfinding-browser.min');
 
 function createJqueryStub() {
     var chain = {
@@ -46,16 +47,18 @@ function createJqueryStub() {
     return jquery;
 }
 
-function loadController() {
+function loadController(pf) {
+    pf = pf || {
+        Grid: SourceGrid,
+        Node: function() {}
+    };
+
     var context = {
         console: {
             error: function() {},
             log: function() {}
         },
-        PF: {
-            Grid: Grid,
-            Node: function() {}
-        },
+        PF: pf,
         MazeImageImporter: require('../visual/js/maze_image_importer'),
         Panel: {},
         View: {
@@ -64,6 +67,7 @@ function loadController() {
             clearPath: function() {},
             setEndPos: function() {},
             setStartPos: function() {},
+            setAttributeAt: function() {},
             setWalkableAt: function() {},
             nodeColorizeEffect: {
                 duration: 0
@@ -116,7 +120,7 @@ describe('Controller maze image editing state', function() {
             wallCount;
 
         controller.gridSize = [5, 3];
-        controller.grid = new Grid(5, 3);
+        controller.grid = new SourceGrid(5, 3);
         controller.current = 'finished';
 
         wallCount = controller.applyMazeMatrix([
@@ -135,5 +139,29 @@ describe('Controller maze image editing state', function() {
         assert.deepEqual([controller.endX, controller.endY], [0, 2]);
         assert.equal(controller.grid.isWalkableAt(controller.startX, controller.startY), true);
         assert.equal(controller.grid.isWalkableAt(controller.endX, controller.endY), true);
+    });
+
+    it('builds an editable searchable grid with the browser PF bundle', function() {
+        var controller = loadController(BrowserPF);
+
+        controller.gridSize = [5, 3];
+        controller.grid = new BrowserPF.Grid(5, 3);
+        controller.current = 'ready';
+
+        controller.applyMazeMatrix([
+            [0, 0, 0, 1, 0],
+            [1, 1, 0, 1, 0],
+            [0, 0, 0, 1, 0]
+        ]);
+
+        assert.equal(controller.grid.width, 5);
+        assert.equal(controller.grid.height, 3);
+        assert.equal(controller.ensureSearchEndpoints(), true);
+        assert.equal(controller.can('drawWall'), true);
+        assert.equal(controller.can('eraseWall'), true);
+
+        controller.setWalkableAt(1, 0, false);
+
+        assert.equal(controller.grid.isWalkableAt(1, 0), false);
     });
 });

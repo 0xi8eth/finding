@@ -89,6 +89,29 @@ h1, h2, h3, h4, h5, h6 {
     overflow: auto;
 }
 
+#algorithm_panel,
+#algorithm_panel .finder_section,
+#algorithm_panel .option_header,
+#algorithm_panel .option_label,
+#algorithm_panel .sub_options,
+#algorithm_panel .info,
+#algorithm_panel label,
+#algorithm_panel input {
+    color: #000 !important;
+}
+
+#algorithm_panel .ui-accordion-content,
+#algorithm_panel .ui-widget-content {
+    color: #000 !important;
+}
+
+#algorithm_panel .ui-state-active a,
+#algorithm_panel .ui-state-default a,
+#algorithm_panel .ui-state-hover a,
+#algorithm_panel .ui-state-focus a {
+    color: #000 !important;
+}
+
 #instructions_panel {
     top: 20px;
 }

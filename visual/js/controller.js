@@ -595,7 +595,7 @@ $.extend(Controller, {
         this.clearFootprints();
         View.clearPath();
         View.clearBlockedNodes();
-        this.grid = new PF.Grid(matrix);
+        this.grid = new PF.Grid(width, height, matrix);
 
         for (y = 0; y < height; ++y) {
             for (x = 0; x < width; ++x) {

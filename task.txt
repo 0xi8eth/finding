@@ -1,0 +1,66 @@
+Tao đọc repo rồi. Kết luận: **khả năng cao không phải do hàm scan ảnh làm “khóa” mê cung**, mà do **click không tới được handler chỉnh sửa**.
+
+Luồng scan vẫn có đoạn đưa grid về trạng thái có thể edit: sau khi đọc ảnh, code tạo `matrix`, gọi `applyMazeMatrix(matrix)`, rồi `applyMazeMatrix` lại gọi `applyWalkabilityMatrix`, vẽ lại start/end và `ensureReadyForMazeEditing()` ([GitHub][1]). Còn phần edit thì chỉ chạy khi `mousedown` vào `#draw_area`; nếu ô đang trống thì `drawWall`, nếu đang là tường thì `eraseWall` ([GitHub][1]).
+
+Vấn đề đáng nghi nhất là UI: `#draw_area` nằm dưới, còn các panel như `instructions_panel`, `image_panel`, `algorithm_panel` nằm sau nó trong HTML ([GitHub][2]). CSS lại đặt `.panel { position: fixed; ... }`, panel trái rộng `380px`, panel phải rộng `280px` ([GitHub][3]). Nghĩa là **một phần lớn mê cung bị panel phủ lên**, click vào vùng đó sẽ click vào panel, không phải `#draw_area`. Sau khi scan ảnh, mê cung hiện ra toàn màn hình nên dễ tưởng “mê cung không click được”, nhưng thật ra vùng dưới panel không nhận event.
+
+Sửa nhanh nhất: thêm CSS để lưới không bị panel che, hoặc kéo panel ra chỗ khác vì repo đã bật `.panel.draggable()` ([GitHub][4]).
+
+Thêm vào `visual/css/style.css`:
+
+```css
+#draw_area {
+  margin-left: 420px;
+  margin-right: 320px;
+}
+```
+
+Nếu vẫn có tình trạng click vào tường scan không ăn, thêm tiếp dòng này để các rect SVG clone của tường không nuốt event:
+
+```css
+#draw_area svg * {
+  pointer-events: none;
+}
+```
+
+Sửa chắc hơn trong `visual/js/controller.js`, thay `bindEvents` bằng bản này:
+
+```js
+bindEvents: function() {
+  var controller = this;
+  var $target = View.paper && View.paper.canvas
+    ? $(View.paper.canvas)
+    : $('#draw_area');
+
+  $target.off('mousedown.gridEdit').on('mousedown.gridEdit', function(event) {
+    event.preventDefault();
+    controller.mousedown(event);
+  });
+
+  $(window)
+    .off('mousemove.gridEdit mouseup.gridEdit')
+    .on('mousemove.gridEdit', $.proxy(this.mousemove, this))
+    .on('mouseup.gridEdit', $.proxy(this.mouseup, this));
+},
+```
+
+Tao sẽ test theo thứ tự này:
+
+1. Sau khi scan, mở DevTools Console gõ:
+
+```js
+Controller.current
+```
+
+Nó nên là `"ready"`. Nếu là `"searching"` hoặc `"paused"` thì phải dừng/xóa đường đi trước.
+
+2. Click vùng mê cung **không bị panel che**. Nếu click được ở giữa nhưng không click được bên trái/phải thì đúng là do panel phủ.
+
+3. Thêm CSS `pointer-events: none` ở trên nếu click vào ô tường scan không đổi màu.
+
+Nói ngắn gọn: **scan không khóa grid; bug nằm ở event/UI overlay.** Chỗ cần sửa chính là `#draw_area` + panel fixed, và có thể thêm `pointer-events: none` cho các node SVG để click luôn rơi về layer xử lý chung.
+
+[1]: https://github.com/0xi8eth/finding/blob/main/visual/js/controller.js "finding/visual/js/controller.js at main · 0xi8eth/finding · GitHub"
+[2]: https://github.com/0xi8eth/finding/blob/main/visual/index.html "finding/visual/index.html at main · 0xi8eth/finding · GitHub"
+[3]: https://github.com/0xi8eth/finding/blob/main/visual/css/style.css "finding/visual/css/style.css at main · 0xi8eth/finding · GitHub"
+[4]: https://github.com/0xi8eth/finding/blob/main/visual/js/panel.js "finding/visual/js/panel.js at main · 0xi8eth/finding · GitHub"
