@@ -23,9 +23,25 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 #draw_area {
+    position: relative;
+    margin-left: 420px;
+    margin-right: 320px;
+    min-height: 100vh;
+    padding: 20px 0;
+    overflow: auto;
     background: #fbfaf6;
     box-shadow: inset 0 0 0 1px rgba(18, 24, 38, 0.08);
     cursor: crosshair;
+}
+
+#draw_area svg {
+    display: block;
+    margin: 0 auto;
+    pointer-events: auto;
+}
+
+#draw_area svg * {
+    pointer-events: none;
 }
 
 .header_title {

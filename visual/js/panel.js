@@ -186,6 +186,22 @@ var Panel = {
                 dontCrossCorners: dontCrossCorners
             });
             break;
+
+        case 'qlearning_header':
+            var learningRate = parseFloat($('#qlearning_section input[name=qlearning_learning_rate]').val()) || 0.1;
+            var discountFactor = parseFloat($('#qlearning_section input[name=qlearning_discount_factor]').val()) || 0.9;
+            var explorationRate = parseFloat($('#qlearning_section input[name=qlearning_exploration_rate]').val()) || 0.3;
+            var maxEpisodes = parseInt($('#qlearning_section input[name=qlearning_episodes]').val(), 10) || 1000;
+            var trackLearning = typeof $('#qlearning_section input[name=qlearning_track]:checked').val() !== 'undefined';
+
+            finder = new PF.QLearningFinder({
+                learningRate: learningRate,
+                discountFactor: discountFactor,
+                explorationRate: explorationRate,
+                maxEpisodes: maxEpisodes,
+                trackLearning: trackLearning
+            });
+            break;
         }
 
         return finder;

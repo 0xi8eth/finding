@@ -635,10 +635,18 @@ $.extend(Controller, {
         });
     },
     bindEvents: function() {
-        $('#draw_area').mousedown($.proxy(this.mousedown, this));
+        var controller = this,
+            $target = View.paper && View.paper.canvas ? $(View.paper.canvas) : $('#draw_area');
+
+        $target.off('mousedown.gridEdit').on('mousedown.gridEdit', function(event) {
+            event.preventDefault();
+            controller.mousedown(event);
+        });
+
         $(window)
-            .mousemove($.proxy(this.mousemove, this))
-            .mouseup($.proxy(this.mouseup, this));
+            .off('mousemove.gridEdit mouseup.gridEdit')
+            .on('mousemove.gridEdit', $.proxy(this.mousemove, this))
+            .on('mouseup.gridEdit', $.proxy(this.mouseup, this));
     },
     loop: function() {
         var interval = 1000 / this.operationsPerSecond;

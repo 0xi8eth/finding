@@ -22,6 +22,7 @@
 
     <script type="text/javascript" src="./lib/pathfinding-browser.min.js"></script>
     <script type="text/javascript" src="../src/finders/DepthFirstFinder.js"></script>
+    <script type="text/javascript" src="../src/finders/QLearningFinder.js"></script>
 
     <script type="text/javascript" src="./js/maze_image_importer.js"></script>
     <script type="text/javascript" src="./js/view.js"></script>
@@ -138,6 +139,29 @@
             <label class="option_label">Không cắt góc</label> <br>
           </div>
           <div class="info">Tìm kiếm theo chiều sâu (Đường đi có thể không tối ưu).</div>
+        </div>
+
+        <h3 id="qlearning_header"><a href="#">Q-Learning</a></h3>
+        <div id="qlearning_section" class="finder_section">
+          <header class="option_header">
+            <h3>Tùy chọn</h3>
+          </header>
+          <div class="optional sub_options">
+            <label class="option_label" for="qlearning_learning_rate">Learning rate</label><br>
+            <input class="spinner" id="qlearning_learning_rate" name="qlearning_learning_rate" value="0.1">
+            <br>
+            <label class="option_label" for="qlearning_discount_factor">Discount factor</label><br>
+            <input class="spinner" id="qlearning_discount_factor" name="qlearning_discount_factor" value="0.9">
+            <br>
+            <label class="option_label" for="qlearning_exploration_rate">Exploration rate</label><br>
+            <input class="spinner" id="qlearning_exploration_rate" name="qlearning_exploration_rate" value="0.3">
+            <br>
+            <label class="option_label" for="qlearning_episodes">Số episode</label><br>
+            <input class="spinner" id="qlearning_episodes" name="qlearning_episodes" value="1000">
+            <br>
+            <input type="checkbox" id="qlearning_track" name="qlearning_track" checked>
+            <label class="option_label" for="qlearning_track">Theo dõi học tập</label>
+          </div>
         </div>
 
         <h3 id="ida_header"><a href="#">IDA*</a></h3>
@@ -276,6 +300,31 @@
           <div class="optional sub_options">
             <input type="checkbox" class="track_recursion" checked>
             <label class="option_label">Hiển thị đệ quy</label> <br>
+          </div>
+        </div>
+
+        <h3 id="qlearning_header"><a href="#">Q-Learning (Học máy)</a></h3>
+        <div id="qlearning_section" class="finder_section">
+          <header class="option_header">
+            <h3>Cấu hình thuật toán</h3>
+          </header>
+          <div class="optional sub_options">
+            <label class="option_label">Tốc độ học (α)</label>
+            <input class="spinner" name="qlearning_learning_rate" value="0.1" min="0" max="1" step="0.01"><br>
+            
+            <label class="option_label">Hệ số giảm giá (γ)</label>
+            <input class="spinner" name="qlearning_discount_factor" value="0.9" min="0" max="1" step="0.01"><br>
+            
+            <label class="option_label">Tỷ lệ khám phá (ε)</label>
+            <input class="spinner" name="qlearning_exploration_rate" value="0.3" min="0" max="1" step="0.01"><br>
+            
+            <label class="option_label">Số vòng huấn luyện</label>
+            <input class="spinner" name="qlearning_episodes" value="1000" min="100" max="10000" step="100"><br>
+            
+            <label class="maze_toggle">
+              <input type="checkbox" name="qlearning_track" checked>
+              <span>Hiển thị thống kê học máy</span>
+            </label><br>
           </div>
         </div>
 
