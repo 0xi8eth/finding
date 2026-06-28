@@ -56,11 +56,10 @@ http://localhost:8080/visual/
 Trong giao diện `visual/`:
 
 1. Chọn ảnh ở phần `Nhập mê cung từ ảnh`.
-2. Điều chỉnh `Ngưỡng tường` nếu ảnh nhận diện chưa đúng.
-3. Bật/tắt `Vùng tối là tường` tùy ảnh của bạn.
-4. Nhấn `Áp dụng ảnh`.
-5. Sau khi scan xong, có thể tiếp tục vẽ/xóa tường hoặc kéo điểm bắt đầu/kết thúc.
-6. Nhấn `Bắt đầu tìm kiếm` để chạy thuật toán.
+2. Nhấn `Áp dụng ảnh`; hệ thống tự crop vùng mê cung, tách mask tường đen và estimate occupancy grid.
+3. Xem các ảnh debug crop/mask/overlay/heatmap/grid trong panel scan nếu cần kiểm tra.
+4. Sau khi scan xong, có thể tiếp tục vẽ/xóa tường hoặc kéo điểm bắt đầu/kết thúc.
+5. Nhấn `Bắt đầu tìm kiếm` để chạy thuật toán.
 
 ## Dùng trong Node.js
 

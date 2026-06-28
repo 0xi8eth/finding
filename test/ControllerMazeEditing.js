@@ -141,6 +141,23 @@ describe('Controller maze image editing state', function() {
         assert.equal(controller.grid.isWalkableAt(controller.endX, controller.endY), true);
     });
 
+    it('keeps the source image aspect ratio when fitting it to the scan canvas', function() {
+        var controller = loadController();
+
+        assert.deepEqual(controller.getMazeImageDrawRect(100, 100, 64, 36), {
+            x: 14,
+            y: 0,
+            width: 36,
+            height: 36
+        });
+        assert.deepEqual(controller.getMazeImageDrawRect(120, 60, 64, 36), {
+            x: 0,
+            y: 2,
+            width: 64,
+            height: 32
+        });
+    });
+
     it('builds an editable searchable grid with the browser PF bundle', function() {
         var controller = loadController(BrowserPF);
 
@@ -163,5 +180,24 @@ describe('Controller maze image editing state', function() {
         controller.setWalkableAt(1, 0, false);
 
         assert.equal(controller.grid.isWalkableAt(1, 0), false);
+    });
+
+    it('resizes the editable grid to scanned occupancy dimensions', function() {
+        var controller = loadController();
+
+        controller.gridSize = [5, 3];
+        controller.grid = new SourceGrid(5, 3);
+        controller.current = 'ready';
+
+        controller.applyMazeMatrix([
+            [1, 1, 1, 1],
+            [1, 0, 0, 1]
+        ]);
+
+        assert.deepEqual(controller.gridSize, [4, 2]);
+        assert.equal(controller.grid.width, 4);
+        assert.equal(controller.grid.height, 2);
+        assert.equal(controller.grid.isWalkableAt(1, 0), false);
+        assert.equal(controller.grid.isWalkableAt(1, 1), true);
     });
 });

@@ -134,6 +134,8 @@ h1, h2, h3, h4, h5, h6 {
 
 #image_panel {
     top: 245px;
+    max-height: calc(100vh - 265px);
+    overflow: auto;
 }
 
 #hide_instructions {
@@ -291,28 +293,6 @@ button:disabled {
     width: 100%;
 }
 
-.maze_option {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    color: #334155;
-    font-size: 14px;
-    margin-top: 12px;
-}
-
-.maze_option strong {
-    color: #1f7a5b;
-    font-size: 15px;
-}
-
-#maze_wall_threshold {
-    display: block;
-    margin-top: 8px;
-    width: 100%;
-    accent-color: #1f7a5b;
-}
-
 .maze_toggles {
     display: grid;
     gap: 8px;
@@ -347,6 +327,42 @@ button:disabled {
 #maze_image_status.error {
     color: #9f1d1d;
     background: #fff1f1;
+}
+
+.maze_debug_panel {
+    display: grid;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.maze_debug_item {
+    display: grid;
+    gap: 6px;
+    padding: 8px;
+    background: #f8fafc;
+    border: 1px solid #e3e7ec;
+    border-radius: 6px;
+}
+
+.maze_debug_item span {
+    color: #334155;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.maze_debug_item canvas {
+    display: block;
+    width: 100%;
+    max-height: 180px;
+    object-fit: contain;
+    background: #fff;
+    border: 1px solid #d9dee5;
+}
+
+.maze_debug_item a {
+    color: #1f7a5b;
+    font-size: 12px;
+    font-weight: 700;
 }
 
 .finder_section {

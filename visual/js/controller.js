@@ -95,6 +95,9 @@ $.extend(Controller, {
     operationsPerSecond: 300,
     mazeImage: null,
     mazeImageUrl: null,
+    mazeImageSampleScale: 4,
+    mazeImageMaxScanSide: 1200,
+    mazeWallCoverageThreshold: 0.45,
     mazeMaxFileSize: 5 * 1024 * 1024,
     mazeAllowedImageTypes: {
         'image/png': true,
@@ -377,36 +380,12 @@ $.extend(Controller, {
     bindMazeImageEvents: function() {
         var controller = this,
             $input = $('#maze_image_input'),
-            $threshold = $('#maze_wall_threshold'),
-            $thresholdValue = $('#maze_wall_threshold_value'),
-            $darkWalls = $('#maze_dark_walls'),
-            $thinWalls = $('#maze_thin_walls'),
             $applyButton = $('#maze_apply_button');
 
-        $thresholdValue.text($threshold.val());
         this.setMazeApplyEnabled(false);
 
         $input.change(function() {
             controller.loadMazeImageFile(this.files && this.files[0]);
-        });
-
-        $threshold.on('input change', function() {
-            $thresholdValue.text(this.value);
-            if (controller.mazeImage) {
-                controller.setMazeImageStatus('Điều chỉnh xong, nhấp Áp dụng ảnh.');
-            }
-        });
-
-        $darkWalls.change(function() {
-            if (controller.mazeImage) {
-                controller.setMazeImageStatus('Đã đổi quy tắc nhận diện, nhấp Áp dụng ảnh.');
-            }
-        });
-
-        $thinWalls.change(function() {
-            if (controller.mazeImage) {
-                controller.setMazeImageStatus('Đã đổi cách làm mảnh tường, nhấp Áp dụng ảnh.');
-            }
         });
 
         $applyButton.click(function() {
@@ -485,8 +464,37 @@ $.extend(Controller, {
 
         image.src = this.mazeImageUrl;
     },
+    getMazeImageDrawRect: function(imageWidth, imageHeight, targetWidth, targetHeight) {
+        var scale, width, height;
+
+        imageWidth = parseFloat(imageWidth);
+        imageHeight = parseFloat(imageHeight);
+        targetWidth = parseInt(targetWidth, 10);
+        targetHeight = parseInt(targetHeight, 10);
+
+        if (!imageWidth || !imageHeight || !targetWidth || !targetHeight) {
+            return {
+                x: 0,
+                y: 0,
+                width: Math.max(0, targetWidth || 0),
+                height: Math.max(0, targetHeight || 0)
+            };
+        }
+
+        scale = Math.min(targetWidth / imageWidth, targetHeight / imageHeight);
+        width = Math.min(targetWidth, Math.max(1, Math.round(imageWidth * scale)));
+        height = Math.min(targetHeight, Math.max(1, Math.round(imageHeight * scale)));
+
+        return {
+            x: Math.floor((targetWidth - width) / 2),
+            y: Math.floor((targetHeight - height) / 2),
+            width: width,
+            height: height
+        };
+    },
     applyMazeImage: function() {
-        var canvas, context, imageData, matrix, wallCount;
+        var canvas, context, imageData, scanResult, matrix, wallCount,
+            scanScale, imageWidth, imageHeight;
 
         if (!this.mazeImage) {
             this.setMazeImageStatus('Chưa chọn ảnh.', true);
@@ -503,9 +511,16 @@ $.extend(Controller, {
             this.clear();
         }
 
+        imageWidth = this.mazeImage.naturalWidth || this.mazeImage.width;
+        imageHeight = this.mazeImage.naturalHeight || this.mazeImage.height;
+        scanScale = Math.min(
+            1,
+            this.mazeImageMaxScanSide / Math.max(imageWidth, imageHeight)
+        );
+
         canvas = document.createElement('canvas');
-        canvas.width = this.gridSize[0];
-        canvas.height = this.gridSize[1];
+        canvas.width = Math.max(1, Math.round(imageWidth * scanScale));
+        canvas.height = Math.max(1, Math.round(imageHeight * scanScale));
         context = canvas.getContext('2d');
 
         if (!context) {
@@ -515,6 +530,12 @@ $.extend(Controller, {
 
         context.fillStyle = '#fff';
         context.fillRect(0, 0, canvas.width, canvas.height);
+        if (context.imageSmoothingEnabled !== undefined) {
+            context.imageSmoothingEnabled = true;
+        }
+        if (context.imageSmoothingQuality !== undefined) {
+            context.imageSmoothingQuality = 'high';
+        }
         context.drawImage(this.mazeImage, 0, 0, canvas.width, canvas.height);
 
         try {
@@ -524,16 +545,266 @@ $.extend(Controller, {
             return;
         }
 
-        matrix = MazeImageImporter.imageDataToMatrix(imageData, {
-            threshold: $('#maze_wall_threshold').val(),
-            darkAsWall: $('#maze_dark_walls').is(':checked'),
-            thinWalls: $('#maze_thin_walls').is(':checked')
+        scanResult = MazeImageImporter.scanImageDataToOccupancyGrid(imageData, {
+            wallThreshold: this.mazeWallCoverageThreshold
         });
+        matrix = scanResult.matrix;
+        this.lastMazeScan = scanResult;
+        this.logMazeScan(scanResult);
+        this.renderMazeDebugArtifacts(scanResult);
 
         wallCount = this.applyMazeMatrix(matrix);
-        this.setMazeImageStatus('Đã tạo mê cung từ ảnh: ' + wallCount + ' ô tường.');
+        this.setMazeImageStatus(
+            'Đã tạo mê cung từ ảnh: ' +
+            wallCount + ' ô tường, ' +
+            scanResult.metadata.cols + ' cột x ' +
+            scanResult.metadata.rows + ' hàng.'
+        );
+    },
+    logMazeScan: function(scanResult) {
+        if (typeof console === 'undefined' || !console.log || !scanResult) {
+            return;
+        }
+
+        console.log('Maze scan', {
+            cropBox: scanResult.metadata.cropBox,
+            cellSize: scanResult.metadata.cellSize,
+            offsetX: scanResult.metadata.offsetX,
+            offsetY: scanResult.metadata.offsetY,
+            wallThreshold: scanResult.metadata.wallThreshold,
+            threshold: scanResult.metadata.threshold,
+            rows: scanResult.metadata.rows,
+            cols: scanResult.metadata.cols,
+            score: scanResult.metadata.score
+        });
+    },
+    renderMazeDebugArtifacts: function(scanResult) {
+        var panel;
+
+        if (typeof document === 'undefined' || !scanResult || !scanResult.debug) {
+            return;
+        }
+
+        panel = document.getElementById('maze_debug_panel');
+        if (!panel) {
+            panel = document.createElement('div');
+            panel.id = 'maze_debug_panel';
+            panel.className = 'maze_debug_panel';
+            document.getElementById('image_panel').appendChild(panel);
+        }
+        panel.innerHTML = '';
+
+        this.appendMazeDebugCanvas(
+            panel,
+            'crop',
+            this.createCropDebugCanvas(scanResult.debug.crop)
+        );
+        this.appendMazeDebugCanvas(
+            panel,
+            'threshold-mask',
+            this.createMaskDebugCanvas(scanResult.debug.thresholdMask)
+        );
+        this.appendMazeDebugCanvas(
+            panel,
+            'grid-overlay',
+            this.createGridOverlayDebugCanvas(scanResult)
+        );
+        this.appendMazeDebugCanvas(
+            panel,
+            'black-ratio-heatmap',
+            this.createRatioHeatmapCanvas(scanResult.ratios)
+        );
+        this.appendMazeDebugCanvas(
+            panel,
+            'occupancy-grid',
+            this.createOccupancyDebugCanvas(scanResult.matrix)
+        );
+    },
+    appendMazeDebugCanvas: function(panel, title, canvas) {
+        var item, label, link;
+
+        if (!canvas) {
+            return;
+        }
+
+        item = document.createElement('div');
+        item.className = 'maze_debug_item';
+        label = document.createElement('span');
+        label.textContent = title;
+        item.appendChild(label);
+        item.appendChild(canvas);
+
+        if (canvas.toDataURL) {
+            link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = title + '.png';
+            link.textContent = 'download';
+            item.appendChild(link);
+        }
+
+        panel.appendChild(item);
+    },
+    createCanvasImageData: function(context, width, height, rgba) {
+        var imageData = context.createImageData(width, height),
+            i;
+
+        for (i = 0; i < rgba.length; ++i) {
+            imageData.data[i] = rgba[i];
+        }
+
+        return imageData;
+    },
+    createCropDebugCanvas: function(crop) {
+        var canvas, context;
+
+        if (!crop || !crop.width || !crop.height) {
+            return null;
+        }
+
+        canvas = document.createElement('canvas');
+        canvas.width = crop.width;
+        canvas.height = crop.height;
+        context = canvas.getContext('2d');
+        context.putImageData(
+            this.createCanvasImageData(context, crop.width, crop.height, crop.data),
+            0,
+            0
+        );
+
+        return canvas;
+    },
+    createMaskDebugCanvas: function(mask) {
+        var canvas, context, rgba, x, y, index, value;
+
+        if (!mask || !mask.width || !mask.height) {
+            return null;
+        }
+
+        canvas = document.createElement('canvas');
+        canvas.width = mask.width;
+        canvas.height = mask.height;
+        context = canvas.getContext('2d');
+        rgba = new Uint8ClampedArray(mask.width * mask.height * 4);
+
+        for (y = 0; y < mask.height; ++y) {
+            for (x = 0; x < mask.width; ++x) {
+                index = y * mask.width + x;
+                value = mask.data[index] ? 0 : 255;
+                rgba[index * 4] = value;
+                rgba[index * 4 + 1] = value;
+                rgba[index * 4 + 2] = value;
+                rgba[index * 4 + 3] = 255;
+            }
+        }
+
+        context.putImageData(
+            this.createCanvasImageData(context, mask.width, mask.height, rgba),
+            0,
+            0
+        );
+
+        return canvas;
+    },
+    createGridOverlayDebugCanvas: function(scanResult) {
+        var canvas = this.createCropDebugCanvas(scanResult.debug.crop),
+            context, metadata, x, y;
+
+        if (!canvas) {
+            return null;
+        }
+
+        context = canvas.getContext('2d');
+        metadata = scanResult.metadata;
+        context.strokeStyle = 'rgba(31, 122, 91, 0.9)';
+        context.lineWidth = 1;
+
+        for (x = -metadata.offsetX; x <= canvas.width; x += metadata.cellSize) {
+            context.beginPath();
+            context.moveTo(x + 0.5, 0);
+            context.lineTo(x + 0.5, canvas.height);
+            context.stroke();
+        }
+        for (y = -metadata.offsetY; y <= canvas.height; y += metadata.cellSize) {
+            context.beginPath();
+            context.moveTo(0, y + 0.5);
+            context.lineTo(canvas.width, y + 0.5);
+            context.stroke();
+        }
+
+        return canvas;
+    },
+    createRatioHeatmapCanvas: function(ratios) {
+        var cellSize = 10,
+            rows = ratios && ratios.length,
+            cols = rows ? ratios[0].length : 0,
+            canvas, context, x, y, ratio, value;
+
+        if (!rows || !cols) {
+            return null;
+        }
+
+        canvas = document.createElement('canvas');
+        canvas.width = cols * cellSize;
+        canvas.height = rows * cellSize;
+        context = canvas.getContext('2d');
+
+        for (y = 0; y < rows; ++y) {
+            for (x = 0; x < cols; ++x) {
+                ratio = Math.max(0, Math.min(1, ratios[y][x]));
+                value = Math.round(255 - ratio * 255);
+                context.fillStyle = 'rgb(' + value + ',' + value + ',' + value + ')';
+                context.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+            }
+        }
+
+        this.drawDebugGridLines(context, cols, rows, cellSize);
+        return canvas;
+    },
+    createOccupancyDebugCanvas: function(matrix) {
+        var cellSize = 10,
+            rows = matrix && matrix.length,
+            cols = rows ? matrix[0].length : 0,
+            canvas, context, x, y;
+
+        if (!rows || !cols) {
+            return null;
+        }
+
+        canvas = document.createElement('canvas');
+        canvas.width = cols * cellSize;
+        canvas.height = rows * cellSize;
+        context = canvas.getContext('2d');
+
+        for (y = 0; y < rows; ++y) {
+            for (x = 0; x < cols; ++x) {
+                context.fillStyle = matrix[y][x] ? '#80868d' : '#fff';
+                context.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+            }
+        }
+
+        this.drawDebugGridLines(context, cols, rows, cellSize);
+        return canvas;
+    },
+    drawDebugGridLines: function(context, cols, rows, cellSize) {
+        var x, y;
+
+        context.strokeStyle = 'rgba(23, 32, 42, 0.22)';
+        context.lineWidth = 1;
+        for (x = 0; x <= cols; ++x) {
+            context.beginPath();
+            context.moveTo(x * cellSize + 0.5, 0);
+            context.lineTo(x * cellSize + 0.5, rows * cellSize);
+            context.stroke();
+        }
+        for (y = 0; y <= rows; ++y) {
+            context.beginPath();
+            context.moveTo(0, y * cellSize + 0.5);
+            context.lineTo(cols * cellSize, y * cellSize + 0.5);
+            context.stroke();
+        }
     },
     applyMazeMatrix: function(matrix) {
+        this.updateGridSizeFromMatrix(matrix);
         this.setStartEndFromMazeMatrix(matrix);
         matrix = this.keepStartEndWalkable(matrix);
         this.applyWalkabilityMatrix(matrix);
@@ -569,8 +840,10 @@ $.extend(Controller, {
             return;
         }
 
-        this.setStartPos(endpoints.start[0], endpoints.start[1]);
-        this.setEndPos(endpoints.end[0], endpoints.end[1]);
+        this.startX = this.clampGridX(endpoints.start[0]);
+        this.startY = this.clampGridY(endpoints.start[1]);
+        this.endX = this.clampGridX(endpoints.end[0]);
+        this.endY = this.clampGridY(endpoints.end[1]);
     },
     redrawStartEndPos: function() {
         this.setStartPos(this.startX, this.startY);
@@ -589,13 +862,17 @@ $.extend(Controller, {
         });
     },
     applyWalkabilityMatrix: function(matrix) {
-        var x, y, width = this.gridSize[0], height = this.gridSize[1];
+        var x, y,
+            height = matrix.length,
+            width = height ? matrix[0].length : 0;
 
         this.clearOperations();
         this.clearFootprints();
         View.clearPath();
         View.clearBlockedNodes();
+        this.gridSize = [width, height];
         this.grid = new PF.Grid(width, height, matrix);
+        this.rebuildViewGrid(width, height);
 
         for (y = 0; y < height; ++y) {
             for (x = 0; x < width; ++x) {
@@ -604,6 +881,37 @@ $.extend(Controller, {
                 }
             }
         }
+    },
+    updateGridSizeFromMatrix: function(matrix) {
+        var height = matrix.length,
+            width = height && matrix[0] ? matrix[0].length : 0,
+            y;
+
+        if (!height || !width) {
+            throw new Error('Invalid matrix');
+        }
+
+        for (y = 0; y < height; ++y) {
+            if (!matrix[y] || matrix[y].length !== width) {
+                throw new Error('Invalid matrix');
+            }
+        }
+
+        this.gridSize = [width, height];
+    },
+    rebuildViewGrid: function(width, height) {
+        if (View.rebuildGrid) {
+            View.rebuildGrid(width, height);
+            return;
+        }
+
+        View.numCols = width;
+        View.numRows = height;
+        View.blockedNodes = null;
+        View.coordDirty = undefined;
+        View.path = null;
+        View.startNode = null;
+        View.endNode = null;
     },
     countWalls: function(matrix) {
         var x, y, count = 0;

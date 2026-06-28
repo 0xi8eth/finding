@@ -24,6 +24,7 @@
     <script type="text/javascript" src="../src/finders/DepthFirstFinder.js"></script>
     <script type="text/javascript" src="../src/finders/QLearningFinder.js"></script>
 
+    <script type="text/javascript" src="./js/maze_occupancy_scanner.js"></script>
     <script type="text/javascript" src="./js/maze_image_importer.js"></script>
     <script type="text/javascript" src="./js/view.js"></script>
     <script type="text/javascript" src="./js/controller.js"></script>
@@ -67,25 +68,9 @@
       </label>
       <input id="maze_image_input" class="file_input" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp">
 
-      <label class="maze_option" for="maze_wall_threshold">
-        <span>Ngưỡng tường</span>
-        <strong id="maze_wall_threshold_value">150</strong>
-      </label>
-      <input id="maze_wall_threshold" type="range" min="0" max="255" value="150">
-
-      <div class="maze_toggles">
-        <label class="maze_toggle">
-          <input id="maze_dark_walls" type="checkbox" checked>
-          <span>Vùng tối là tường</span>
-        </label>
-        <label class="maze_toggle">
-          <input id="maze_thin_walls" type="checkbox" checked>
-          <span>Làm mảnh tường</span>
-        </label>
-      </div>
-
       <button id="maze_apply_button" class="primary_button" type="button">Áp dụng ảnh</button>
       <div id="maze_image_status" aria-live="polite">Chưa chọn ảnh</div>
+      <div id="maze_debug_panel" class="maze_debug_panel"></div>
     </div>
 
     <div id="algorithm_panel" class="panel right_panel">

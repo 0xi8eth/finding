@@ -121,6 +121,42 @@ var View = {
             }
         });
     },
+    generateGridSync: function() {
+        var j, x, y, rect,
+            nodeSize = this.nodeSize,
+            normalStyle = this.nodeStyle.normal,
+            numCols = this.numCols,
+            numRows = this.numRows,
+            paper = this.paper,
+            rects = this.rects = [];
+
+        paper.setSize(numCols * nodeSize, numRows * nodeSize);
+        this.applyZoom();
+
+        for (y = 0; y < numRows; ++y) {
+            rects[y] = [];
+            for (j = 0; j < numCols; ++j) {
+                x = j * nodeSize;
+                rect = paper.rect(x, y * nodeSize, nodeSize, nodeSize);
+                rect.attr(normalStyle);
+                rects[y].push(rect);
+            }
+        }
+    },
+    rebuildGrid: function(numCols, numRows) {
+        this.numCols = numCols;
+        this.numRows = numRows;
+        this.blockedNodes = null;
+        this.coordDirty = undefined;
+        this.path = null;
+        this.startNode = null;
+        this.endNode = null;
+
+        if (this.paper && this.paper.clear) {
+            this.paper.clear();
+        }
+        this.generateGridSync();
+    },
     setStartPos: function(gridX, gridY) {
         var coord = this.toPageCoordinate(gridX, gridY);
         if (!this.startNode) {
