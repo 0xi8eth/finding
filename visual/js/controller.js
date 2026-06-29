@@ -1047,18 +1047,12 @@ $.extend(Controller, {
 
         switch (this.current) {
         case 'draggingStart':
-            if (grid.isInside(gridX, gridY)) {
-                if (!grid.isWalkableAt(gridX, gridY)) {
-                    this.setWalkableAt(gridX, gridY, true);
-                }
+            if (grid.isInside(gridX, gridY) && grid.isWalkableAt(gridX, gridY)) {
                 this.setStartPos(gridX, gridY);
             }
             break;
         case 'draggingEnd':
-            if (grid.isInside(gridX, gridY)) {
-                if (!grid.isWalkableAt(gridX, gridY)) {
-                    this.setWalkableAt(gridX, gridY, true);
-                }
+            if (grid.isInside(gridX, gridY) && grid.isWalkableAt(gridX, gridY)) {
                 this.setEndPos(gridX, gridY);
             }
             break;

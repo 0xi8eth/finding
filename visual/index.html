@@ -34,6 +34,7 @@
   <body>
     <div id="draw_area"></div>
 
+    <aside id="ui_sidebar">
     <div id="instructions_panel" class="panel left_panel">
       <header class="panel_header">
         <div>
@@ -326,13 +327,15 @@
       <button id="button1" class="control_button">Bắt đầu tìm kiếm</button>
       <button id="button2" class="control_button">Tạm dừng tìm kiếm</button>
       <button id="button3" class="control_button">Xóa tường</button>
-      <div id="zoom_controls">
-        <button id="zoom_out_button" class="zoom_button" type="button" title="Thu nhỏ">-</button>
-        <button id="zoom_reset_button" class="zoom_button" type="button" title="Đặt lại zoom">
-          <span id="zoom_level">100%</span>
-        </button>
-        <button id="zoom_in_button" class="zoom_button" type="button" title="Phóng to">+</button>
-      </div>
+    </div>
+    </aside>
+
+    <div id="zoom_controls">
+      <button id="zoom_out_button" class="zoom_button" type="button" title="Thu nhỏ">-</button>
+      <button id="zoom_reset_button" class="zoom_button" type="button" title="Đặt lại zoom">
+        <span id="zoom_level">100%</span>
+      </button>
+      <button id="zoom_in_button" class="zoom_button" type="button" title="Phóng to">+</button>
     </div>
 
     <div id="stats"></div>

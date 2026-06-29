@@ -69,6 +69,9 @@ function loadController(pf) {
             setStartPos: function() {},
             setAttributeAt: function() {},
             setWalkableAt: function() {},
+            toGridCoordinate: function() {
+                return this.nextGridCoordinate || [0, 0];
+            },
             nodeColorizeEffect: {
                 duration: 0
             }
@@ -88,6 +91,7 @@ function loadController(pf) {
     );
 
     context.Controller.setButtonStates = function() {};
+    context.Controller.__view = context.View;
 
     return context.Controller;
 }
@@ -199,5 +203,31 @@ describe('Controller maze image editing state', function() {
         assert.equal(controller.grid.height, 2);
         assert.equal(controller.grid.isWalkableAt(1, 0), false);
         assert.equal(controller.grid.isWalkableAt(1, 1), true);
+    });
+
+    it('does not erase walls while dragging start or end over blocked cells', function() {
+        var controller = loadController();
+
+        controller.gridSize = [5, 1];
+        controller.grid = new SourceGrid(5, 1);
+        controller.current = 'ready';
+        controller.setStartPos(0, 0);
+        controller.setEndPos(4, 0);
+        controller.setWalkableAt(2, 0, false);
+
+        controller.dragStart();
+        controller.__view.nextGridCoordinate = [2, 0];
+        controller.mousemove({});
+
+        assert.equal(controller.grid.isWalkableAt(2, 0), false);
+        assert.deepEqual([controller.startX, controller.startY], [0, 0]);
+
+        controller.rest();
+        controller.dragEnd();
+        controller.__view.nextGridCoordinate = [2, 0];
+        controller.mousemove({});
+
+        assert.equal(controller.grid.isWalkableAt(2, 0), false);
+        assert.deepEqual([controller.endX, controller.endY], [4, 0]);
     });
 });
