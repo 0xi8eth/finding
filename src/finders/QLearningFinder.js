@@ -10,6 +10,67 @@ function backtrace(node) {
     return path.reverse();
 }
 
+function clonePath(path) {
+    return (path || []).map(function(coord) {
+        return [coord[0], coord[1]];
+    });
+}
+
+function cloneQTable(qTable) {
+    var copy = {};
+    var state;
+
+    for (state in qTable) {
+        if (qTable.hasOwnProperty(state)) {
+            copy[state] = qTable[state].slice();
+        }
+    }
+
+    return copy;
+}
+
+function cloneOptions(options) {
+    return {
+        learningRate: options.learningRate,
+        discountFactor: options.discountFactor,
+        explorationRate: options.explorationRate,
+        maxEpisodes: options.maxEpisodes,
+        trackLearning: options.trackLearning
+    };
+}
+
+function cloneEpisodes(episodes) {
+    return (episodes || []).map(function(episode) {
+        return {
+            episode: episode.episode,
+            totalReward: episode.totalReward,
+            steps: episode.steps,
+            reachedGoal: episode.reachedGoal
+        };
+    });
+}
+
+function cloneLearningRun(run) {
+    if (!run) {
+        return null;
+    }
+
+    return {
+        start: clonePath([run.start])[0],
+        end: clonePath([run.end])[0],
+        options: cloneOptions(run.options || {}),
+        episodes: cloneEpisodes(run.episodes),
+        bestPath: clonePath(run.bestPath),
+        path: clonePath(run.path),
+        pathFound: !!run.pathFound,
+        trainingPathFound: !!run.trainingPathFound,
+        successCount: run.successCount || 0,
+        totalReward: run.totalReward || 0,
+        qTableSize: run.qTableSize || 0,
+        qTable: cloneQTable(run.qTable || {})
+    };
+}
+
 /**
  * Q-Learning Path Finder
  * Sử dụng Reinforcement Learning để tìm đường tối ưu
@@ -33,6 +94,8 @@ function QLearningFinder(options) {
         iterations: 0
     };
     this.trackLearning = options.trackLearning !== false;
+    this.learningHistory = [];
+    this.lastLearningRun = null;
 }
 
 /**
@@ -126,6 +189,26 @@ QLearningFinder.prototype.calculateReward = function(x, y, endX, endY, grid, cur
 QLearningFinder.prototype.train = function(startX, startY, endX, endY, grid) {
     var self = this;
     var successCount = 0;
+    var run = {
+        start: [startX, startY],
+        end: [endX, endY],
+        options: {
+            learningRate: this.learningRate,
+            discountFactor: this.discountFactor,
+            explorationRate: this.explorationRate,
+            maxEpisodes: this.maxEpisodes,
+            trackLearning: this.trackLearning
+        },
+        episodes: [],
+        bestPath: [],
+        path: [],
+        pathFound: false,
+        trainingPathFound: false,
+        successCount: 0,
+        totalReward: 0,
+        qTableSize: 0,
+        qTable: {}
+    };
     
     for (var episode = 0; episode < this.maxEpisodes; episode++) {
         var x = startX;
@@ -133,6 +216,8 @@ QLearningFinder.prototype.train = function(startX, startY, endX, endY, grid) {
         var episodeReward = 0;
         var maxSteps = grid.width * grid.height * 2;
         var stepCount = 0;
+        var reachedGoal = false;
+        var episodePath = [[x, y]];
         
         while (stepCount < maxSteps) {
             var state = x + ',' + y;
@@ -164,11 +249,16 @@ QLearningFinder.prototype.train = function(startX, startY, endX, endY, grid) {
             if (self.isValidPosition(nextPos.x, nextPos.y, grid)) {
                 x = nextPos.x;
                 y = nextPos.y;
+                episodePath.push([x, y]);
             }
             
             // Kiểm tra đã đến đích
             if (x === endX && y === endY) {
                 successCount++;
+                reachedGoal = true;
+                if (!run.bestPath.length || episodePath.length < run.bestPath.length) {
+                    run.bestPath = clonePath(episodePath);
+                }
                 break;
             }
             
@@ -177,9 +267,25 @@ QLearningFinder.prototype.train = function(startX, startY, endX, endY, grid) {
         
         this.stats.episode = episode + 1;
         this.stats.totalReward = episodeReward;
+        if (this.trackLearning) {
+            run.episodes.push({
+                episode: episode + 1,
+                totalReward: episodeReward,
+                steps: stepCount,
+                reachedGoal: reachedGoal
+            });
+        }
     }
     
     this.stats.pathFound = successCount > 0;
+    run.pathFound = this.stats.pathFound;
+    run.trainingPathFound = this.stats.pathFound;
+    run.successCount = successCount;
+    run.totalReward = this.stats.totalReward;
+    run.qTableSize = Object.keys(this.qTable).length;
+    run.qTable = cloneQTable(this.qTable);
+
+    return run;
 };
 
 /**
@@ -237,6 +343,9 @@ QLearningFinder.prototype.extractPath = function(startX, startY, endX, endY, gri
  * Hàm chính - tìm đường
  */
 QLearningFinder.prototype.findPath = function(startX, startY, endX, endY, grid) {
+    var run;
+    var path;
+
     // Reset stats
     this.stats = {
         episode: 0,
@@ -249,11 +358,39 @@ QLearningFinder.prototype.findPath = function(startX, startY, endX, endY, grid) 
     this.qTable = {};
     
     // Training
-    this.train(startX, startY, endX, endY, grid);
+    run = this.train(startX, startY, endX, endY, grid) || {};
     
     // Extraction
-    var path = this.extractPath(startX, startY, endX, endY, grid);
+    path = this.extractPath(startX, startY, endX, endY, grid);
+    if (!path.length && run.bestPath && run.bestPath.length) {
+        path = clonePath(run.bestPath);
+    }
+
     this.stats.iterations = path.length;
+    this.stats.pathFound = path.length > 0 &&
+        path[path.length - 1][0] === endX &&
+        path[path.length - 1][1] === endY;
+
+    run.start = run.start || [startX, startY];
+    run.end = run.end || [endX, endY];
+    run.options = run.options || {
+        learningRate: this.learningRate,
+        discountFactor: this.discountFactor,
+        explorationRate: this.explorationRate,
+        maxEpisodes: this.maxEpisodes,
+        trackLearning: this.trackLearning
+    };
+    run.episodes = run.episodes || [];
+    run.bestPath = clonePath(run.bestPath);
+    run.path = clonePath(path);
+    run.trainingPathFound = !!run.pathFound;
+    run.pathFound = this.stats.pathFound;
+    run.successCount = run.successCount || 0;
+    run.totalReward = this.stats.totalReward;
+    run.qTableSize = Object.keys(this.qTable).length;
+    run.qTable = cloneQTable(this.qTable);
+    this.lastLearningRun = cloneLearningRun(run);
+    this.learningHistory = this.learningHistory.concat([this.lastLearningRun]);
     
     return path;
 };
@@ -272,6 +409,16 @@ QLearningFinder.prototype.getStats = function() {
         discountFactor: this.discountFactor,
         explorationRate: this.explorationRate
     };
+};
+
+QLearningFinder.prototype.getLearningHistory = function() {
+    return this.learningHistory.map(function(run) {
+        return cloneLearningRun(run);
+    });
+};
+
+QLearningFinder.prototype.getLastLearningRun = function() {
+    return cloneLearningRun(this.lastLearningRun);
 };
 
 if (typeof module !== 'undefined' && module.exports) {

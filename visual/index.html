@@ -38,7 +38,6 @@
     <div id="instructions_panel" class="panel left_panel">
       <header class="panel_header">
         <div>
-          <span class="panel_kicker">PathFinding.js</span>
           <h2 class="header_title">Trình tìm đường</h2>
         </div>
         <button id="hide_instructions" class="panel_close" type="button" title="Ẩn hướng dẫn">&times;</button>
@@ -125,29 +124,6 @@
             <label class="option_label">Không cắt góc</label> <br>
           </div>
           <div class="info">Tìm kiếm theo chiều sâu (Đường đi có thể không tối ưu).</div>
-        </div>
-
-        <h3 id="qlearning_header"><a href="#">Q-Learning</a></h3>
-        <div id="qlearning_section" class="finder_section">
-          <header class="option_header">
-            <h3>Tùy chọn</h3>
-          </header>
-          <div class="optional sub_options">
-            <label class="option_label" for="qlearning_learning_rate">Learning rate</label><br>
-            <input class="spinner" id="qlearning_learning_rate" name="qlearning_learning_rate" value="0.1">
-            <br>
-            <label class="option_label" for="qlearning_discount_factor">Discount factor</label><br>
-            <input class="spinner" id="qlearning_discount_factor" name="qlearning_discount_factor" value="0.9">
-            <br>
-            <label class="option_label" for="qlearning_exploration_rate">Exploration rate</label><br>
-            <input class="spinner" id="qlearning_exploration_rate" name="qlearning_exploration_rate" value="0.3">
-            <br>
-            <label class="option_label" for="qlearning_episodes">Số episode</label><br>
-            <input class="spinner" id="qlearning_episodes" name="qlearning_episodes" value="1000">
-            <br>
-            <input type="checkbox" id="qlearning_track" name="qlearning_track" checked>
-            <label class="option_label" for="qlearning_track">Theo dõi học tập</label>
-          </div>
         </div>
 
         <h3 id="ida_header"><a href="#">IDA*</a></h3>
@@ -309,7 +285,7 @@
             
             <label class="maze_toggle">
               <input type="checkbox" name="qlearning_track" checked>
-              <span>Hiển thị thống kê học máy</span>
+              <span>Lưu quá trình học</span>
             </label><br>
           </div>
         </div>
@@ -339,10 +315,6 @@
     </div>
 
     <div id="stats"></div>
-
-    <footer>
-      Dự án được lưu trữ trên <a href="http://github.com/qiao/PathFinding.js">Github</a>
-    </footer>
 
   </body>
 </html>

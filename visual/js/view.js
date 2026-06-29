@@ -360,8 +360,13 @@ var View = {
      * Helper function to convert the page coordinate to grid coordinate
      */
     toGridCoordinate: function(pageX, pageY) {
-        var offset = $('#draw_area').offset(),
+        var canvas = this.paper && this.paper.canvas,
+            offset = canvas ? $(canvas).offset() : $('#draw_area').offset(),
             zoomLevel = this.zoomLevel || 1;
+
+        if (!offset) {
+            offset = $('#draw_area').offset() || { left: 0, top: 0 };
+        }
 
         return [
             Math.floor((pageX - offset.left) / zoomLevel / this.nodeSize),
