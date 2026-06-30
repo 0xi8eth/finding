@@ -16,4 +16,5 @@ module.exports = {
     'IDAStarFinder'             : require('./finders/IDAStarFinder'),
     'JumpPointFinder'           : require('./finders/JumpPointFinder'),
     'QLearningFinder'           : require('./finders/QLearningFinder'),
+    'DeepQLearningFinder'       : require('./finders/DeepQLearningFinder'),
 };

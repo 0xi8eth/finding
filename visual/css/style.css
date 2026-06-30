@@ -544,3 +544,28 @@ a {
 .spinner {
     width: 2em;
 }
+
+.model_path_input {
+    width: 100%;
+    margin: 4px 0 8px;
+}
+
+.dqn_file_picker {
+    margin: 4px 0 8px;
+}
+
+.algorithm_status {
+    min-height: 34px;
+    margin-top: 8px;
+    padding: 8px 10px;
+    color: #52616f;
+    background: #f4f6f8;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.35;
+}
+
+.algorithm_status.error {
+    color: #9f1d1d;
+    background: #fff1f1;
+}

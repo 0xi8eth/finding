@@ -114,6 +114,7 @@ $.extend(Controller, {
         '.gif': true,
         '.bmp': true
     },
+    searchToken: 0,
 
     /**
      * Asynchronous transition from `none` state to `ready` state.
@@ -154,6 +155,9 @@ $.extend(Controller, {
     onsearch: function(event, from, to) {
         var grid,
             timeStart, timeEnd,
+            result,
+            token,
+            controller = this,
             finder = Panel.getFinder();
 
         this.clearOperations();
@@ -176,14 +180,57 @@ $.extend(Controller, {
         }
         timeStart = window.performance ? performance.now() : Date.now();
         grid = this.grid.clone();
-        this.path = finder.findPath(
-            this.startX, this.startY, this.endX, this.endY, grid
-        );
-        this.operationCount = this.operations.length;
-        timeEnd = window.performance ? performance.now() : Date.now();
-        this.timeSpent = (timeEnd - timeStart).toFixed(4);
+        token = ++this.searchToken;
 
-        this.loop();
+        function finishSearch(path, keepStatus) {
+            var stats;
+            if (token !== controller.searchToken) {
+                return;
+            }
+            controller.path = path || [];
+            controller.operationCount = controller.operations.length;
+            timeEnd = window.performance ? performance.now() : Date.now();
+            controller.timeSpent = (timeEnd - timeStart).toFixed(4);
+            if (!keepStatus && finder.getStats) {
+                stats = finder.getStats();
+                if (stats && stats.modelPath) {
+                    controller.setDeepQLearningStatus(
+                        'Deep Q Learning: ' +
+                        (stats.pathFound ? 'đã tìm thấy đường, ' : 'không tìm thấy đường, ') +
+                        'mở rộng ' + stats.expandedNodes + ' node.'
+                    );
+                }
+            }
+            controller.loop();
+        }
+
+        function failSearch(error) {
+            if (finder.getStats && finder.getStats().modelPath) {
+                controller.setDeepQLearningStatus(error && error.message ?
+                    error.message : 'Không chạy được thuật toán tìm đường.', true);
+            } else {
+                controller.setMazeImageStatus(error && error.message ?
+                    error.message : 'Không chạy được thuật toán tìm đường.', true);
+            }
+            finishSearch([], true);
+        }
+
+        try {
+            result = finder.findPath(
+                this.startX, this.startY, this.endX, this.endY, grid
+            );
+        } catch (error) {
+            failSearch(error);
+            return;
+        }
+
+        if (result && typeof result.then === 'function') {
+            this.setDeepQLearningStatus('Đang tải model Deep Q Learning...');
+            result.then(finishSearch, failSearch);
+            return;
+        }
+
+        finishSearch(result);
         // => searching
     },
     onrestart: function() {
@@ -928,6 +975,11 @@ $.extend(Controller, {
     },
     setMazeImageStatus: function(message, isError) {
         $('#maze_image_status')
+            .text(message)
+            .toggleClass('error', !!isError);
+    },
+    setDeepQLearningStatus: function(message, isError) {
+        $('#deep_qlearning_status')
             .text(message)
             .toggleClass('error', !!isError);
     },

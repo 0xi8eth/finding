@@ -5,7 +5,7 @@ Thư viện tìm đường trên lưới 2D bằng JavaScript, có thể dùng t
 ## Tính năng chính
 
 - Tạo lưới đi được/không đi được bằng `PF.Grid`.
-- Hỗ trợ nhiều thuật toán tìm đường: A*, Dijkstra, Breadth First Search, Best First Search, IDA*, Jump Point Search và các biến thể hai chiều.
+- Hỗ trợ nhiều thuật toán tìm đường: A*, Dijkstra, Breadth First Search, Best First Search, IDA*, Jump Point Search, Q-Learning, Deep Q Learning và các biến thể hai chiều.
 - Có giao diện trực quan để xem quá trình thuật toán mở node, đóng node và vẽ đường đi.
 - Có chức năng nhập mê cung từ ảnh trong giao diện `visual/`.
 
@@ -61,6 +61,18 @@ Trong giao diện `visual/`:
 4. Sau khi scan xong, có thể tiếp tục vẽ/xóa tường hoặc kéo điểm bắt đầu/kết thúc.
 5. Nhấn `Bắt đầu tìm kiếm` để chạy thuật toán.
 
+## Deep Q Learning
+
+Giao diện `visual/` có mục `Deep Q Learning` riêng. Mặc định mục này tải model đã train từ:
+
+```text
+C:\code\finding\dqn_model.pt
+```
+
+Khi chạy trong trình duyệt qua server HTTP, đường dẫn tương đối là `../dqn_model.pt` từ `visual/index.html`. Nếu mở trực tiếp bằng `file://`, browser không cho đọc path Windows như `C:\code\finding\dqn_model.pt`; hãy bấm `Chọn file model .pt` và chọn `dqn_model.pt`, hoặc mở giao diện qua server tĩnh như phần trên.
+
+Tùy chọn `Giới hạn node mở rộng` là số node tối đa DQN được phép xét trong một lần dò; nhập `0` để tự động dùng kích thước mê cung (`width * height`).
+
 ## Dùng trong Node.js
 
 Ví dụ cơ bản:
@@ -100,6 +112,8 @@ var path = finder.findPath(1, 2, 4, 2, grid.clone());
 - `DijkstraFinder`
 - `IDAStarFinder`
 - `JumpPointFinder`
+- `QLearningFinder`
+- `DeepQLearningFinder`
 - `BiAStarFinder`
 - `BiBestFirstFinder`
 - `BiBreadthFirstFinder`
@@ -122,7 +136,7 @@ npx gulp test
 Kết quả hiện tại mong đợi:
 
 ```text
-63 passing
+86 passing
 ```
 
 ## Build bản chạy trên trình duyệt

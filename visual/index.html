@@ -23,6 +23,7 @@
     <script type="text/javascript" src="./lib/pathfinding-browser.min.js"></script>
     <script type="text/javascript" src="../src/finders/DepthFirstFinder.js"></script>
     <script type="text/javascript" src="../src/finders/QLearningFinder.js"></script>
+    <script type="text/javascript" src="../src/finders/DeepQLearningFinder.js"></script>
 
     <script type="text/javascript" src="./js/maze_occupancy_scanner.js"></script>
     <script type="text/javascript" src="./js/maze_image_importer.js"></script>
@@ -287,6 +288,31 @@
               <input type="checkbox" name="qlearning_track" checked>
               <span>Lưu quá trình học</span>
             </label><br>
+          </div>
+        </div>
+
+        <h3 id="deep_qlearning_header"><a href="#">Deep Q Learning</a></h3>
+        <div id="deep_qlearning_section" class="finder_section">
+          <header class="option_header">
+            <h3>Model đã train</h3>
+          </header>
+          <div class="optional sub_options">
+            <label class="option_label">File model</label>
+            <input class="model_path_input" name="deep_qlearning_model_path" value="../dqn_model.pt"><br>
+            <label class="file_picker dqn_file_picker" for="deep_qlearning_file_input">
+              <span>Chọn file model .pt</span>
+              <small>Dùng khi mở trang bằng file://</small>
+            </label>
+            <input id="deep_qlearning_file_input" class="file_input" name="deep_qlearning_file" type="file" accept=".pt,application/octet-stream"><br>
+
+            <label class="option_label">Giới hạn node mở rộng (0 = tự động)</label>
+            <input class="spinner" name="deep_qlearning_max_nodes" value="0" min="0" step="50"><br>
+
+            <label class="maze_toggle">
+              <input type="checkbox" name="deep_qlearning_track" checked>
+              <span>Hiển thị bước dò node</span>
+            </label><br>
+            <div id="deep_qlearning_status" class="algorithm_status" aria-live="polite">Chưa chạy Deep Q Learning</div>
           </div>
         </div>
 

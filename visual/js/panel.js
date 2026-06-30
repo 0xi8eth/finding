@@ -196,6 +196,21 @@ var Panel = {
                 trackLearning: trackLearning
             });
             break;
+
+        case 'deep_qlearning_header':
+            var modelPath = $('#deep_qlearning_section input[name=deep_qlearning_model_path]').val() || '../dqn_model.pt';
+            var maxExpandedNodes = parseInt($('#deep_qlearning_section input[name=deep_qlearning_max_nodes]').val(), 10) || 0;
+            var trackDecisions = typeof $('#deep_qlearning_section input[name=deep_qlearning_track]:checked').val() !== 'undefined';
+            var fileInput = document.getElementById('deep_qlearning_file_input');
+            var modelFile = fileInput && fileInput.files && fileInput.files[0];
+
+            finder = new PF.DeepQLearningFinder({
+                modelPath: modelFile ? modelFile.name : modelPath,
+                modelBytes: modelFile || null,
+                maxExpandedNodes: maxExpandedNodes,
+                trackDecisions: trackDecisions
+            });
+            break;
         }
 
         return finder;
